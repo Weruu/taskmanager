@@ -1,0 +1,38 @@
+### GET request to example server
+GET https://examples.http-client.intellij.net/get
+    ?generated-in=IntelliJ IDEA
+
+###
+POST http://localhost:8081/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Вивчити Spring Boot",
+  "description": "Пройти базовий курс і запустити першу програму",
+  "completed": false
+}
+### 1. Получить все задачи
+GET http://localhost:8081/api/tasks
+
+### 2. Создать новую задачу
+POST http://localhost:8081/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Зробити лабу з Java",
+  "description": "Написати контролери та перевірити роботу",
+  "completed": false
+}
+
+### 3. Обновить задачу (например, пометить выполненной, id=1)
+PUT http://localhost:8081/api/tasks/1
+Content-Type: application/json
+
+{
+  "title": "Зробити лабу з Java",
+  "description": "Написати контролери та перевірити роботу",
+  "completed": true
+}
+
+### 4. Удалить задачу по ID (например, id=1)
+DELETE http://localhost:8081/api/tasks/1

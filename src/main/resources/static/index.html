@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <!-- Подключаем Tailwind CSS для красивого и современного дизайна -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center py-10 px-4">
+
+<div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700">
+    <h1 class="text-2xl font-bold mb-6 text-center text-emerald-400">📝 Менеджер Задач</h1>
+
+    <!-- Форма добавления задачи -->
+    <form id="taskForm" class="space-y-4 mb-6">
+        <div>
+            <input type="text" id="title" placeholder="Назва задачі..." required
+                   class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-emerald-500 text-sm">
+        </div>
+        <div>
+                <textarea id="description" placeholder="Опис задачі..." rows="2"
+                          class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-emerald-500 text-sm resize-none"></textarea>
+        </div>
+        <button type="submit"
+                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg transition duration-200 text-sm shadow-lg shadow-emerald-900/40">
+            Додати задачу
+        </button>
+    </form>
+
+    <!-- Список задач -->
+    <div id="taskList" class="space-y-3">
+        <!-- Сюда JavaScript будет подгружать задачи -->
+    </div>
+</div>
+
+<script>
+    const API_URL = 'http://localhost:8081/api/tasks';
+
+    // Функция загрузки задач с сервера
+    async function loadTasks() {
+        try {
+            const response = await fetch(API_URL);
+            const tasks = await response.json();
+
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">Поки що немає жодної задачі</p>';
+                return;
+            }
+
+            tasks.forEach(task => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = `p-4 rounded-xl border flex items-start justify-between gap-3 transition ${task.completed ? 'bg-slate-900/50 border-slate-800 opacity-60' : 'bg-slate-700/40 border-slate-600'}`;
+
+                taskDiv.innerHTML = `
+                        <div class="flex items-start gap-3 flex-1">
+                            <input type="checkbox" ${task.completed ? 'checked' : ''} onclick="toggleTask(${task.id}, '${task.title}', '${task.description || ''}', ${!task.completed})"
+                                class="mt-1 w-4 h-4 accent-emerald-500 cursor-pointer">
+                            <div class="flex-1">
+                                <h3 class="font-medium text-sm ${task.completed ? 'line-through text-slate-400' : 'text-slate-200'}">${escapeHtml(task.title)}</h3>
+                                ${task.description ? `<p class="text-xs text-slate-400 mt-1">${escapeHtml(task.description)}</p>` : ''}
+                            </div>
+                        </div>
+                        <button onclick="deleteTask(${task.id})" class="text-slate-500 hover:text-red-400 text-sm font-bold px-2 py-1 transition">
+                            ✕
+                        </button>
+                    `;
+                taskList.appendChild(taskDiv);
+            });
+        } catch (error) {
+            console.error('Помилка завантаження задач:', error);
+        }
+    }
+
+    // Добавление новой задачи через форму
+    document.getElementById('taskForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('title').value;
+        const description = document.getElementById('description').value;
+
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description, completed: false })
+        });
+
+        document.getElementById('taskForm').reset();
+        loadTasks();
+    });
+
+    // Удаление задачи
+    async function deleteTask(id) {
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        loadTasks();
+    }
+
+    // Обновление статуса (выполнено / не выполнено)
+    async function toggleTask(id, title, description, completed) {
+        await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description, completed })
+        });
+        loadTasks();
+    }
+
+    // Защита от XSS
+    function escapeHtml(str) {
+        return str.replace(/[&<>'"]/g,
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
+    }
+
+    // Загружаем задачи при открытии страницы
+    loadTasks();
+</script>
+</body>
+</html>
